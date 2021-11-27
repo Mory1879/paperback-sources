@@ -227,7 +227,7 @@ export const parseSearch = ($: CheerioStatic): MangaTile[] => {
         const idMatch = /https:\/\/manga-chan\.me\/manga\/(.*)\.html/gm.exec(idHref || '')
         const id = (idMatch && idMatch[1]) ?? ''
         const title = $('h2 > a', item).text() 
-        const subtitle = $('.tags > div', item).text()
+        const subtitle = $('div.row3_left > div > span > b', item).text()
         const image = $('.manga_images img', item).attr('src') ?? ''
 
         manga.push(createMangaTile({

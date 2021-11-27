@@ -4,14 +4,14 @@ import {
     SearchRequest,
     Source
 } from 'paperback-extensions-common'
-import { MangaFox } from '../MangaChan/MangaChan'
+import { MangaChan } from '../MangaChan/MangaChan'
 import chai from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 
-describe('MangaFox Tests', () => {
+describe('MangaChan Tests', () => {
 
     const wrapper: APIWrapper = new APIWrapper()
-    const source: Source = new MangaFox(cheerio)
+    const source: Source = new MangaChan(cheerio)
     const expect = chai.expect
     chai.use(chaiAsPromised)
 
@@ -20,8 +20,8 @@ describe('MangaFox Tests', () => {
    * Try to choose a manga which is updated frequently, so that the historical checking test can
    * return proper results, as it is limited to searching 30 days back due to extremely long processing times otherwise.
    */
-    // var mangaId = "13614-daily-life-with-a-monster-girl";
-    var mangaId = "103903-solo-leveling";
+    // const mangaId = '13614-daily-life-with-a-monster-girl'
+    const mangaId = '103903-solo-leveling'
 
     it('Retrieve Manga Details', async () => {
         const details = await wrapper.getMangaDetails(source, mangaId)

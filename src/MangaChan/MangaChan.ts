@@ -36,7 +36,7 @@ const headers = {
 
 const FF_DOMAIN = 'https://fanfox.net'
 
-export const MangaFoxInfo: SourceInfo = {
+export const MangaChanInfo: SourceInfo = {
     version: '1.0.0',
     name: 'MangaChan',
     icon: 'icon.png',
@@ -49,7 +49,7 @@ export const MangaFoxInfo: SourceInfo = {
     sourceTags: [],
 }
 
-export class MangaFox extends Source {
+export class MangaChan extends Source {
     readonly cookies = [createCookie({ name: 'isAdult', value: '1', domain: 'www.mangahere.cc' })];
 
     requestManager = createRequestManager({
