@@ -149,74 +149,26 @@ export const parseUpdatedManga = ($: CheerioStatic, time: Date, ids: string[]): 
     }
 }
 
-export const parseHomeSections = ($: CheerioStatic, sectionCallback: (section: HomeSection) => void): void => {
-    const sections = [
-        {
-            sectionID: createHomeSection({ id: 'hot_release', title: 'Hot Manga Releases', view_more: true }),
-            selector: $('div.manga-list-1').get(0)
-        },
-        {
-            sectionID: createHomeSection({ id: 'being_read', title: 'Being Read Right Now' }),
-            selector: $('div.manga-list-1').get(1)
-        },
-        {
-            sectionID: createHomeSection({ id: 'recommended', title: 'Recommended' }),
-            selector: $('div.manga-list-3')
-        },
-        {
-            sectionID: createHomeSection({ id: 'new_manga', title: 'New Manga Releases', view_more: true }),
-            selector: $('div.manga-list-1').get(2)
-        }
-    ]
+export const parseHomeSections = ($: CheerioStatic, section: {sectionID: HomeSection, selector: CheerioStatic}, sectionCallback: (section: HomeSection) => void): void => {
+    const mangaArray = []
 
-    //Hot Release Manga
-    //New Manga
-    //Being Read Manga
-    const collectedIds: string[] = []
+    for (const manga of $('.content_row').toArray()) {
+        const idHref = $('h2 > a', manga).attr('href')
+        const idMatch = /\/manga\/(.*)\.html/gm.exec(idHref || '')
+        const id = (idMatch && idMatch[1]) ?? ''
+        const title = $('h2 > a', manga).text() 
+        const subtitle = $('div.row3_left > div > span > b', manga).text() ?? ' Нет глав'
+        const image = $('.manga_images img', manga).attr('src') ?? ''
 
-    for (const section of sections) {
-        const mangaArray: MangaTile[] = []
-
-        for (const manga of $('li', section.selector).toArray()) {
-            const id = $('a', manga).attr('href')?.split('/manga/')[1]?.replace(/\//g, '')
-            const image: string = $('img', manga).first().attr('src') ?? ''
-            const title: string = $('a', manga).first().attr('title')?.trim() ?? ''
-            const subtitle: string = $('p.manga-list-1-item-subtitle', manga).text().trim()
-            if (!id || !title || !image) continue
-
-            if (collectedIds.includes(id)) continue
-            mangaArray.push(createMangaTile({
-                id: id,
-                image: image ? image : 'https://i.imgur.com/GYUxEX8.png',
-                title: createIconText({ text: title }),
-                subtitleText: createIconText({ text: subtitle }),
-            }))
-        }
-        section.sectionID.items = mangaArray
-        sectionCallback(section.sectionID)
-
-    }
-    //Latest Manga
-    const latestSection = createHomeSection({ id: 'latest_updates', title: 'Latest Updates', view_more: true })
-    const latestManga: MangaTile[] = []
-
-    for (const manga of $('li', 'div.manga-list-4 ').toArray()) {
-        const id = $('a', manga).attr('href')?.split('/manga/')[1]?.replace(/\//g, '')
-        const image: string = $('img', manga).first().attr('src') ?? ''
-        const title: string = $('a', manga).attr('title')?.trim() ?? ''
-        const subtitle: string = $('ul.manga-list-4-item-part > li', manga).first().text().trim()
-        if (!id || !title || !image) continue
-
-        if (collectedIds.includes(id)) continue
-        latestManga.push(createMangaTile({
+        mangaArray.push(createMangaTile({
             id: id,
             image: image ? image : 'https://i.imgur.com/GYUxEX8.png',
             title: createIconText({ text: title }),
             subtitleText: createIconText({ text: subtitle }),
         }))
     }
-    latestSection.items = latestManga
-    sectionCallback(latestSection)
+    section.sectionID.items = mangaArray
+    sectionCallback(section.sectionID)
 }
 
 export const parseSearch = ($: CheerioStatic): MangaTile[] => {
@@ -227,7 +179,7 @@ export const parseSearch = ($: CheerioStatic): MangaTile[] => {
         const idMatch = /https:\/\/manga-chan\.me\/manga\/(.*)\.html/gm.exec(idHref || '')
         const id = (idMatch && idMatch[1]) ?? ''
         const title = $('h2 > a', item).text() 
-        const subtitle = $('div.row3_left > div > span > b', item).text()
+        const subtitle = $('div.row3_left > div > span > b', item).text() ?? ' Нет глав'
         const image = $('.manga_images img', item).attr('src') ?? ''
 
         manga.push(createMangaTile({
@@ -240,61 +192,33 @@ export const parseSearch = ($: CheerioStatic): MangaTile[] => {
     return manga
 }
 
-export const parseViewMore = ($: CheerioStatic, homepageSectionId: string): MangaTile[] => {
-    const mangaItems: MangaTile[] = []
-    const collectedIds: string[] = []
+export const parseViewMore = ($: CheerioStatic): MangaTile[] => {
+    const allItems = $('.content_row').toArray()
+    const manga: MangaTile[] = []
+    for (const item of allItems) {
+        const idHref = $('h2 > a', item).attr('href')
+        const idMatch = /https:\/\/manga-chan\.me\/manga\/(.*)\.html/gm.exec(idHref || '')
+        const id = (idMatch && idMatch[1]) ?? ''
+        const title = $('h2 > a', item).text() 
+        const subtitle = $('div.row3_left > div > span > b', item).text() ?? ' Нет глав'
+        const image = $('.manga_images img', item).attr('src') ?? ''
 
-    if (homepageSectionId === 'latest_updates') {
-        for (const manga of $('ul.manga-list-4-list > li').toArray()) {
-            const id = $('a', manga).attr('href')?.split('/manga/')[1]?.replace(/\//g, '')
-            const image: string = $('img', manga).first().attr('src') ?? ''
-            const title: string = $('a', manga).attr('title')?.trim() ?? ''
-            const subtitle: string = $('ul.manga-list-4-item-part > li', manga).first().text().trim()
-            if (!id || !title || !image) continue
-
-            if (collectedIds.includes(id)) continue
-            mangaItems.push(createMangaTile({
-                id,
-                image: image ? image : 'https://i.imgur.com/GYUxEX8.png',
-                title: createIconText({ text: title }),
-                subtitleText: createIconText({ text: subtitle }),
-            }))
-            collectedIds.push(id)
-        }
-
-        return mangaItems
-    }
-
-    for (const manga of $('li', $.html()).toArray()) {
-        const id = $('a', manga).attr('href')?.split('/manga/')[1]?.replace(/\//g, '')
-        const image: string = $('img', manga).first().attr('src') ?? ''
-        const title: string = $('img', manga).first().attr('alt')?.trim() ?? ''
-        const subtitle: string = $('p.manga-list-1-item-subtitle', manga).text().trim()
-        if (!id || !title || !image) continue
-
-        if (collectedIds.includes(id)) continue
-        mangaItems.push(createMangaTile({
-            id,
-            image: image ? image : 'https://i.imgur.com/GYUxEX8.png',
+        manga.push(createMangaTile({
+            id: id,
+            image,
             title: createIconText({ text: title }),
             subtitleText: createIconText({ text: subtitle }),
         }))
-        collectedIds.push(id)
-
     }
-
-    return mangaItems
-
+    return manga
 }
 
 export const parseTags = ($: CheerioStatic): TagSection[] => {
-
     const arrayTags: Tag[] = []
-    for (const tag of $('div.tag-box > a').toArray()) {
-        const label = $(tag).text().trim()
-        const id = $(tag).attr('data-val') ?? ''
-        if (!id || !label) continue
-        arrayTags.push({ id: id, label: label })
+    for (const tag of $('#side > div > div > ul > li').toArray()) {
+        const tagLabel = $('> a:nth-child(3)', tag).text().trim()
+        if (!tagLabel) continue
+        arrayTags.push({ id: tagLabel, label: tagLabel })
     }
 
     const tagSections: TagSection[] = [createTagSection({ id: '0', label: 'genres', tags: arrayTags.map(x => createTag(x)) })]
@@ -332,13 +256,13 @@ const parseDate = (date: string): Date => {
 export const isLastPage = ($: CheerioStatic): boolean => {
     let isLast = true
     const pages = []
-    for (const page of $('a', '.pager-list-left').toArray()) {
+    for (const page of $('#pagination > span > a').toArray()) {
         const p = Number($(page).text().trim())
         if (isNaN(p)) continue
         pages.push(p)
     }
     const lastPage = Math.max(...pages)
-    const currentPage = Number($('a.active', '.pager-list-left').text().trim())
+    const currentPage = Number($('#pagination > span > b').text().trim())
     if (currentPage <= lastPage) isLast = false
     return isLast
 }

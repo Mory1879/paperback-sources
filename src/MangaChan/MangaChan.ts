@@ -134,39 +134,59 @@ export class MangaChan extends Source {
 
     }
 
-    // TODO
     override async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
 
-        const request = createRequestObject({
-            url: FF_DOMAIN,
+        const requestNew = createRequestObject({
+            url: `${MANGACHAN_DOMAIN}/manga/new`,
             method: 'GET',
             cookies: this.cookies
         })
+        const responseNew = await this.requestManager.schedule(requestNew, 1)
+        const $new = this.cheerio.load(responseNew.data)
 
-        const response = await this.requestManager.schedule(request, 1)
-        const $ = this.cheerio.load(response.data)
-        parseHomeSections($, sectionCallback)
+        const requestPopular = createRequestObject({
+            url: `${MANGACHAN_DOMAIN}/mostfavorites`,
+            method: 'GET',
+            cookies: this.cookies
+        })
+        const responsePopular = await this.requestManager.schedule(requestPopular, 1)
+        const $popular = this.cheerio.load(responsePopular.data)
+
+        const sections = [
+            {
+                sectionID: createHomeSection({ id: 'new_manga', title: 'Новинки', view_more: true }),
+                selector: $new,
+            },
+            {
+                sectionID: createHomeSection({ id: 'popular', title: 'Популярное', view_more: true }),
+                selector: $popular,
+            },
+        ]
+
+        for (const section of sections) {
+            parseHomeSections(section.selector, section, sectionCallback)
+        }
     }
 
-    // TODO
     override async getViewMoreItems(homepageSectionId: string, metadata: any): Promise<PagedResults> {
         const page: number = metadata?.page ?? 1
+        // ?offset=20 = second page
+        // ?offset=40 = third page
+        const offset = page > 1 ? `?offset=${20 * (page - 1)}` : ''
         let param = ''
+        console.log({homepageSectionId})
         switch (homepageSectionId) {
-            case 'hot_release':
-                param = '/hot/'
-                break
             case 'new_manga':
-                param = `/directory/${page}.htm?news`
+                param = '/mostfavorites' + offset
                 break
-            case 'latest_updates':
-                param = `/releases/${page}`
+            case 'popular':
+                param = '/manga/new' + offset
                 break
             default:
                 throw new Error(`Invalid homeSectionId | ${homepageSectionId}`)
         }
         const request = createRequestObject({
-            url: `${FF_DOMAIN}/`,
+            url: `${MANGACHAN_DOMAIN}`,
             method: 'GET',
             param,
             cookies: this.cookies
@@ -175,7 +195,7 @@ export class MangaChan extends Source {
         const response = await this.requestManager.schedule(request, 1)
         const $ = this.cheerio.load(response.data)
 
-        const manga = parseViewMore($, homepageSectionId)
+        const manga = parseViewMore($)
         metadata = !isLastPage($) ? { page: page + 1 } : undefined
         return createPagedResults({
             results: manga,
@@ -206,7 +226,7 @@ export class MangaChan extends Source {
     // TODO
     override async getTags(): Promise<TagSection[]> {
         const request = createRequestObject({
-            url: `${FF_DOMAIN}/search?`,
+            url: `${MANGACHAN_DOMAIN}/catalog?`,
             method: 'GET',
             cookies: this.cookies,
         })
