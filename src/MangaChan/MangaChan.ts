@@ -174,7 +174,6 @@ export class MangaChan extends Source {
         // ?offset=40 = third page
         const offset = page > 1 ? `?offset=${20 * (page - 1)}` : ''
         let param = ''
-        console.log({homepageSectionId})
         switch (homepageSectionId) {
             case 'new_manga':
                 param = '/mostfavorites' + offset
@@ -206,11 +205,20 @@ export class MangaChan extends Source {
     async getSearchResults(query: SearchRequest, metadata: any): Promise<PagedResults> {
         const page : number = metadata?.page ?? 1
         const search = encodeURI(generateSearch(query))
-        const request = createRequestObject({
-            url: `${MANGACHAN_DOMAIN}/index.php?do=search&subaction=search&search_start=1&full_search=0&result_from=1&result_num=40&story=${search}&need_sort_date=false`,
-            method,
-            headers,
-        })
+        let request
+        if (query.includedTags) {
+            request = createRequestObject({
+                url: `${MANGACHAN_DOMAIN}/tags/${query.includedTags.join('+')}`,
+                method,
+                headers,
+            })
+        } else {
+            request = createRequestObject({
+                url: `${MANGACHAN_DOMAIN}/index.php?do=search&subaction=search&search_start=1&full_search=0&result_from=1&result_num=40&story=${search}&need_sort_date=false`,
+                method,
+                headers,
+            })
+        }
 
         const response = await this.requestManager.schedule(request, 1)
         const $ = this.cheerio.load(response.data)
@@ -223,7 +231,6 @@ export class MangaChan extends Source {
         })
     }
 
-    // TODO
     override async getTags(): Promise<TagSection[]> {
         const request = createRequestObject({
             url: `${MANGACHAN_DOMAIN}/catalog?`,

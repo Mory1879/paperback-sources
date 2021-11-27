@@ -83,9 +83,7 @@ describe('MangaChan Tests', () => {
     it('Testing search', async () => {
         const testSearch: SearchRequest = {
             title: 'love',
-            parameters: {
-                includedTags: ['action']
-            }
+            parameters: {}
         }
 
         const search = await wrapper.searchRequest(source, testSearch, 1)
@@ -97,6 +95,24 @@ describe('MangaChan Tests', () => {
         expect(result?.image, 'No image found for search').to.be.not.empty
         expect(result?.title, 'No title').to.be.not.null
         expect(result?.subtitleText, 'No subtitle text').to.be.not.null
+
+        // const testSearchTags: SearchRequest = {
+        //     title: '',
+        //     parameters: {
+        //         includedTags: ['боевик']
+        //     }
+        // }
+
+        // const searchTags = await wrapper.searchRequest(source, testSearchTags, 1)
+        // console.log({searchTags})
+        // const resultTags = searchTags.results[0]
+
+        // expect(resultTags, 'No response from server').to.exist
+
+        // expect(resultTags?.id, 'No ID found for search query').to.be.not.empty
+        // expect(resultTags?.image, 'No image found for search').to.be.not.empty
+        // expect(resultTags?.title, 'No title').to.be.not.null
+        // expect(resultTags?.subtitleText, 'No subtitle text').to.be.not.null
     })
 
     it('Testing Home-Page aquisition', async () => {
