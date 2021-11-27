@@ -387,7 +387,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.MangaFox = exports.MangaFoxInfo = void 0;
+exports.MangaChan = exports.MangaChanInfo = void 0;
 /* eslint-disable linebreak-style */
 const paperback_extensions_common_1 = require("paperback-extensions-common");
 const MangaChanParser_1 = require("./MangaChanParser");
@@ -398,7 +398,7 @@ const headers = {
     referer: MANGACHAN_DOMAIN
 };
 const FF_DOMAIN = 'https://fanfox.net';
-exports.MangaFoxInfo = {
+exports.MangaChanInfo = {
     version: '1.0.0',
     name: 'MangaChan',
     icon: 'icon.png',
@@ -410,7 +410,7 @@ exports.MangaFoxInfo = {
     websiteBaseURL: MANGACHAN_DOMAIN,
     sourceTags: [],
 };
-class MangaFox extends paperback_extensions_common_1.Source {
+class MangaChan extends paperback_extensions_common_1.Source {
     constructor() {
         super(...arguments);
         this.cookies = [createCookie({ name: 'isAdult', value: '1', domain: 'www.mangahere.cc' })];
@@ -569,7 +569,7 @@ class MangaFox extends paperback_extensions_common_1.Source {
         });
     }
 }
-exports.MangaFox = MangaFox;
+exports.MangaChan = MangaChan;
 
 },{"./MangaChanParser":49,"paperback-extensions-common":5}],49:[function(require,module,exports){
 "use strict";
@@ -779,7 +779,7 @@ const parseSearch = ($) => {
         const idMatch = /https:\/\/manga-chan\.me\/manga\/(.*)\.html/gm.exec(idHref || '');
         const id = (_a = (idMatch && idMatch[1])) !== null && _a !== void 0 ? _a : '';
         const title = $('h2 > a', item).text();
-        const subtitle = $('.tags > div', item).text();
+        const subtitle = $('div.row3_left > div > span > b', item).text();
         const image = (_b = $('.manga_images img', item).attr('src')) !== null && _b !== void 0 ? _b : '';
         manga.push(createMangaTile({
             id: id,
