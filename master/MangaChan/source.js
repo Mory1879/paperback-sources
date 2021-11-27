@@ -557,21 +557,20 @@ class MangaChan extends paperback_extensions_common_1.Source {
         return __awaiter(this, void 0, void 0, function* () {
             const page = (_a = metadata === null || metadata === void 0 ? void 0 : metadata.page) !== null && _a !== void 0 ? _a : 1;
             const search = encodeURI(MangaChanParser_1.generateSearch(query));
-            let request;
-            if (query.includedTags) {
-                request = createRequestObject({
-                    url: `${MANGACHAN_DOMAIN}/tags/${query.includedTags.join('+')}`,
-                    method,
-                    headers,
-                });
-            }
-            else {
-                request = createRequestObject({
-                    url: `${MANGACHAN_DOMAIN}/index.php?do=search&subaction=search&search_start=1&full_search=0&result_from=1&result_num=40&story=${search}&need_sort_date=false`,
-                    method,
-                    headers,
-                });
-            }
+            // let request
+            // if (query.includedTags) {
+            //     request = createRequestObject({
+            //         url: `${MANGACHAN_DOMAIN}/tags/${query.includedTags.join('+')}`,
+            //         method,
+            //         headers,
+            //     })
+            // } else {
+            // }
+            const request = createRequestObject({
+                url: `${MANGACHAN_DOMAIN}/index.php?do=search&subaction=search&search_start=1&full_search=0&result_from=1&result_num=40&story=${search}&need_sort_date=false`,
+                method,
+                headers,
+            });
             const response = yield this.requestManager.schedule(request, 1);
             const $ = this.cheerio.load(response.data);
             const manga = MangaChanParser_1.parseSearch($);
