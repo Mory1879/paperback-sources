@@ -487,47 +487,64 @@ class MangaChan extends paperback_extensions_common_1.Source {
             }
         });
     }
-    // TODO
     getHomePageSections(sectionCallback) {
         return __awaiter(this, void 0, void 0, function* () {
-            const request = createRequestObject({
-                url: FF_DOMAIN,
+            const requestNew = createRequestObject({
+                url: `${MANGACHAN_DOMAIN}/manga/new`,
                 method: 'GET',
                 cookies: this.cookies
             });
-            const response = yield this.requestManager.schedule(request, 1);
-            const $ = this.cheerio.load(response.data);
-            MangaChanParser_1.parseHomeSections($, sectionCallback);
+            const responseNew = yield this.requestManager.schedule(requestNew, 1);
+            const $new = this.cheerio.load(responseNew.data);
+            const requestPopular = createRequestObject({
+                url: `${MANGACHAN_DOMAIN}/mostfavorites`,
+                method: 'GET',
+                cookies: this.cookies
+            });
+            const responsePopular = yield this.requestManager.schedule(requestPopular, 1);
+            const $popular = this.cheerio.load(responsePopular.data);
+            const sections = [
+                {
+                    sectionID: createHomeSection({ id: 'new_manga', title: 'Новинки', view_more: true }),
+                    selector: $new,
+                },
+                {
+                    sectionID: createHomeSection({ id: 'popular', title: 'Популярное', view_more: true }),
+                    selector: $popular,
+                },
+            ];
+            for (const section of sections) {
+                MangaChanParser_1.parseHomeSections(section.selector, section, sectionCallback);
+            }
         });
     }
-    // TODO
     getViewMoreItems(homepageSectionId, metadata) {
         var _a;
         return __awaiter(this, void 0, void 0, function* () {
             const page = (_a = metadata === null || metadata === void 0 ? void 0 : metadata.page) !== null && _a !== void 0 ? _a : 1;
+            // ?offset=20 = second page
+            // ?offset=40 = third page
+            const offset = page > 1 ? `?offset=${20 * (page - 1)}` : '';
             let param = '';
             switch (homepageSectionId) {
-                case 'hot_release':
-                    param = '/hot/';
-                    break;
                 case 'new_manga':
-                    param = `/directory/${page}.htm?news`;
+                    param = '/mostfavorites' + offset;
                     break;
-                case 'latest_updates':
-                    param = `/releases/${page}`;
+                case 'popular':
+                    param = '/manga/new' + offset;
                     break;
                 default:
                     throw new Error(`Invalid homeSectionId | ${homepageSectionId}`);
             }
             const request = createRequestObject({
-                url: `${FF_DOMAIN}/`,
+                url: `${MANGACHAN_DOMAIN}`,
                 method: 'GET',
                 param,
                 cookies: this.cookies
             });
             const response = yield this.requestManager.schedule(request, 1);
             const $ = this.cheerio.load(response.data);
-            const manga = MangaChanParser_1.parseViewMore($, homepageSectionId);
+            const manga = MangaChanParser_1.parseViewMore($);
             metadata = !MangaChanParser_1.isLastPage($) ? { page: page + 1 } : undefined;
             return createPagedResults({
                 results: manga,
@@ -540,11 +557,21 @@ class MangaChan extends paperback_extensions_common_1.Source {
         return __awaiter(this, void 0, void 0, function* () {
             const page = (_a = metadata === null || metadata === void 0 ? void 0 : metadata.page) !== null && _a !== void 0 ? _a : 1;
             const search = encodeURI(MangaChanParser_1.generateSearch(query));
-            const request = createRequestObject({
-                url: `${MANGACHAN_DOMAIN}/index.php?do=search&subaction=search&search_start=1&full_search=0&result_from=1&result_num=40&story=${search}&need_sort_date=false`,
-                method,
-                headers,
-            });
+            let request;
+            if (query.includedTags) {
+                request = createRequestObject({
+                    url: `${MANGACHAN_DOMAIN}/tags/${query.includedTags.join('+')}`,
+                    method,
+                    headers,
+                });
+            }
+            else {
+                request = createRequestObject({
+                    url: `${MANGACHAN_DOMAIN}/index.php?do=search&subaction=search&search_start=1&full_search=0&result_from=1&result_num=40&story=${search}&need_sort_date=false`,
+                    method,
+                    headers,
+                });
+            }
             const response = yield this.requestManager.schedule(request, 1);
             const $ = this.cheerio.load(response.data);
             const manga = MangaChanParser_1.parseSearch($);
@@ -555,11 +582,10 @@ class MangaChan extends paperback_extensions_common_1.Source {
             });
         });
     }
-    // TODO
     getTags() {
         return __awaiter(this, void 0, void 0, function* () {
             const request = createRequestObject({
-                url: `${FF_DOMAIN}/search?`,
+                url: `${MANGACHAN_DOMAIN}/catalog?`,
                 method: 'GET',
                 cookies: this.cookies,
             });
@@ -702,76 +728,29 @@ const parseUpdatedManga = ($, time, ids) => {
     };
 };
 exports.parseUpdatedManga = parseUpdatedManga;
-const parseHomeSections = ($, sectionCallback) => {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
-    const sections = [
-        {
-            sectionID: createHomeSection({ id: 'hot_release', title: 'Hot Manga Releases', view_more: true }),
-            selector: $('div.manga-list-1').get(0)
-        },
-        {
-            sectionID: createHomeSection({ id: 'being_read', title: 'Being Read Right Now' }),
-            selector: $('div.manga-list-1').get(1)
-        },
-        {
-            sectionID: createHomeSection({ id: 'recommended', title: 'Recommended' }),
-            selector: $('div.manga-list-3')
-        },
-        {
-            sectionID: createHomeSection({ id: 'new_manga', title: 'New Manga Releases', view_more: true }),
-            selector: $('div.manga-list-1').get(2)
-        }
-    ];
-    //Hot Release Manga
-    //New Manga
-    //Being Read Manga
-    const collectedIds = [];
-    for (const section of sections) {
-        const mangaArray = [];
-        for (const manga of $('li', section.selector).toArray()) {
-            const id = (_b = (_a = $('a', manga).attr('href')) === null || _a === void 0 ? void 0 : _a.split('/manga/')[1]) === null || _b === void 0 ? void 0 : _b.replace(/\//g, '');
-            const image = (_c = $('img', manga).first().attr('src')) !== null && _c !== void 0 ? _c : '';
-            const title = (_e = (_d = $('a', manga).first().attr('title')) === null || _d === void 0 ? void 0 : _d.trim()) !== null && _e !== void 0 ? _e : '';
-            const subtitle = $('p.manga-list-1-item-subtitle', manga).text().trim();
-            if (!id || !title || !image)
-                continue;
-            if (collectedIds.includes(id))
-                continue;
-            mangaArray.push(createMangaTile({
-                id: id,
-                image: image ? image : 'https://i.imgur.com/GYUxEX8.png',
-                title: createIconText({ text: title }),
-                subtitleText: createIconText({ text: subtitle }),
-            }));
-        }
-        section.sectionID.items = mangaArray;
-        sectionCallback(section.sectionID);
-    }
-    //Latest Manga
-    const latestSection = createHomeSection({ id: 'latest_updates', title: 'Latest Updates', view_more: true });
-    const latestManga = [];
-    for (const manga of $('li', 'div.manga-list-4 ').toArray()) {
-        const id = (_g = (_f = $('a', manga).attr('href')) === null || _f === void 0 ? void 0 : _f.split('/manga/')[1]) === null || _g === void 0 ? void 0 : _g.replace(/\//g, '');
-        const image = (_h = $('img', manga).first().attr('src')) !== null && _h !== void 0 ? _h : '';
-        const title = (_k = (_j = $('a', manga).attr('title')) === null || _j === void 0 ? void 0 : _j.trim()) !== null && _k !== void 0 ? _k : '';
-        const subtitle = $('ul.manga-list-4-item-part > li', manga).first().text().trim();
-        if (!id || !title || !image)
-            continue;
-        if (collectedIds.includes(id))
-            continue;
-        latestManga.push(createMangaTile({
+const parseHomeSections = ($, section, sectionCallback) => {
+    var _a, _b, _c;
+    const mangaArray = [];
+    for (const manga of $('.content_row').toArray()) {
+        const idHref = $('h2 > a', manga).attr('href');
+        const idMatch = /\/manga\/(.*)\.html/gm.exec(idHref || '');
+        const id = (_a = (idMatch && idMatch[1])) !== null && _a !== void 0 ? _a : '';
+        const title = $('h2 > a', manga).text();
+        const subtitle = (_b = $('div.row3_left > div > span > b', manga).text()) !== null && _b !== void 0 ? _b : ' Нет глав';
+        const image = (_c = $('.manga_images img', manga).attr('src')) !== null && _c !== void 0 ? _c : '';
+        mangaArray.push(createMangaTile({
             id: id,
             image: image ? image : 'https://i.imgur.com/GYUxEX8.png',
             title: createIconText({ text: title }),
             subtitleText: createIconText({ text: subtitle }),
         }));
     }
-    latestSection.items = latestManga;
-    sectionCallback(latestSection);
+    section.sectionID.items = mangaArray;
+    sectionCallback(section.sectionID);
 };
 exports.parseHomeSections = parseHomeSections;
 const parseSearch = ($) => {
-    var _a, _b;
+    var _a, _b, _c;
     const allItems = $('.content_row').toArray();
     const manga = [];
     for (const item of allItems) {
@@ -779,8 +758,8 @@ const parseSearch = ($) => {
         const idMatch = /https:\/\/manga-chan\.me\/manga\/(.*)\.html/gm.exec(idHref || '');
         const id = (_a = (idMatch && idMatch[1])) !== null && _a !== void 0 ? _a : '';
         const title = $('h2 > a', item).text();
-        const subtitle = $('div.row3_left > div > span > b', item).text();
-        const image = (_b = $('.manga_images img', item).attr('src')) !== null && _b !== void 0 ? _b : '';
+        const subtitle = (_b = $('div.row3_left > div > span > b', item).text()) !== null && _b !== void 0 ? _b : ' Нет глав';
+        const image = (_c = $('.manga_images img', item).attr('src')) !== null && _c !== void 0 ? _c : '';
         manga.push(createMangaTile({
             id: id,
             image,
@@ -791,59 +770,34 @@ const parseSearch = ($) => {
     return manga;
 };
 exports.parseSearch = parseSearch;
-const parseViewMore = ($, homepageSectionId) => {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
-    const mangaItems = [];
-    const collectedIds = [];
-    if (homepageSectionId === 'latest_updates') {
-        for (const manga of $('ul.manga-list-4-list > li').toArray()) {
-            const id = (_b = (_a = $('a', manga).attr('href')) === null || _a === void 0 ? void 0 : _a.split('/manga/')[1]) === null || _b === void 0 ? void 0 : _b.replace(/\//g, '');
-            const image = (_c = $('img', manga).first().attr('src')) !== null && _c !== void 0 ? _c : '';
-            const title = (_e = (_d = $('a', manga).attr('title')) === null || _d === void 0 ? void 0 : _d.trim()) !== null && _e !== void 0 ? _e : '';
-            const subtitle = $('ul.manga-list-4-item-part > li', manga).first().text().trim();
-            if (!id || !title || !image)
-                continue;
-            if (collectedIds.includes(id))
-                continue;
-            mangaItems.push(createMangaTile({
-                id,
-                image: image ? image : 'https://i.imgur.com/GYUxEX8.png',
-                title: createIconText({ text: title }),
-                subtitleText: createIconText({ text: subtitle }),
-            }));
-            collectedIds.push(id);
-        }
-        return mangaItems;
-    }
-    for (const manga of $('li', $.html()).toArray()) {
-        const id = (_g = (_f = $('a', manga).attr('href')) === null || _f === void 0 ? void 0 : _f.split('/manga/')[1]) === null || _g === void 0 ? void 0 : _g.replace(/\//g, '');
-        const image = (_h = $('img', manga).first().attr('src')) !== null && _h !== void 0 ? _h : '';
-        const title = (_k = (_j = $('img', manga).first().attr('alt')) === null || _j === void 0 ? void 0 : _j.trim()) !== null && _k !== void 0 ? _k : '';
-        const subtitle = $('p.manga-list-1-item-subtitle', manga).text().trim();
-        if (!id || !title || !image)
-            continue;
-        if (collectedIds.includes(id))
-            continue;
-        mangaItems.push(createMangaTile({
-            id,
-            image: image ? image : 'https://i.imgur.com/GYUxEX8.png',
+const parseViewMore = ($) => {
+    var _a, _b, _c;
+    const allItems = $('.content_row').toArray();
+    const manga = [];
+    for (const item of allItems) {
+        const idHref = $('h2 > a', item).attr('href');
+        const idMatch = /https:\/\/manga-chan\.me\/manga\/(.*)\.html/gm.exec(idHref || '');
+        const id = (_a = (idMatch && idMatch[1])) !== null && _a !== void 0 ? _a : '';
+        const title = $('h2 > a', item).text();
+        const subtitle = (_b = $('div.row3_left > div > span > b', item).text()) !== null && _b !== void 0 ? _b : ' Нет глав';
+        const image = (_c = $('.manga_images img', item).attr('src')) !== null && _c !== void 0 ? _c : '';
+        manga.push(createMangaTile({
+            id: id,
+            image,
             title: createIconText({ text: title }),
             subtitleText: createIconText({ text: subtitle }),
         }));
-        collectedIds.push(id);
     }
-    return mangaItems;
+    return manga;
 };
 exports.parseViewMore = parseViewMore;
 const parseTags = ($) => {
-    var _a;
     const arrayTags = [];
-    for (const tag of $('div.tag-box > a').toArray()) {
-        const label = $(tag).text().trim();
-        const id = (_a = $(tag).attr('data-val')) !== null && _a !== void 0 ? _a : '';
-        if (!id || !label)
+    for (const tag of $('#side > div > div > ul > li').toArray()) {
+        const tagLabel = $('> a:nth-child(3)', tag).text().trim();
+        if (!tagLabel)
             continue;
-        arrayTags.push({ id: id, label: label });
+        arrayTags.push({ id: tagLabel, label: tagLabel });
     }
     const tagSections = [createTagSection({ id: '0', label: 'genres', tags: arrayTags.map(x => createTag(x)) })];
     return tagSections;
@@ -889,14 +843,14 @@ const parseDate = (date) => {
 const isLastPage = ($) => {
     let isLast = true;
     const pages = [];
-    for (const page of $('a', '.pager-list-left').toArray()) {
+    for (const page of $('#pagination > span > a').toArray()) {
         const p = Number($(page).text().trim());
         if (isNaN(p))
             continue;
         pages.push(p);
     }
     const lastPage = Math.max(...pages);
-    const currentPage = Number($('a.active', '.pager-list-left').text().trim());
+    const currentPage = Number($('#pagination > span > b').text().trim());
     if (currentPage <= lastPage)
         isLast = false;
     return isLast;
