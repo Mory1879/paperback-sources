@@ -9,9 +9,9 @@ import {
     PagedResults,
     SourceInfo,
     MangaUpdates,
-    TagType,
     TagSection,
-    ContentRating
+    ContentRating,
+    LanguageCode
 } from 'paperback-extensions-common'
 import {
     parseUpdatedManga,
@@ -23,32 +23,30 @@ import {
     parseMangaDetails,
     parseSearch,
     parseViewMore,
-    UpdatedManga
-} from './MangaFoxParser'
+    UpdatedManga,
+    generateSearch
+} from './MangaChanParser'
 
-import { URLBuilder } from './MangaFoxHelper'
-
-const FF_DOMAIN = 'https://fanfox.net'
-const FF_DOMAIN_MOBILE = 'https://m.fanfox.net'
+const MANGACHAN_DOMAIN = 'https://manga-chan.me'
+const MANGACHAN_MANGA = MANGACHAN_DOMAIN + '/manga/'
+const method = 'GET'
 const headers = {
-    'content-type': 'application/x-www-form-urlencoded'
+    referer: MANGACHAN_DOMAIN
 }
 
+const FF_DOMAIN = 'https://fanfox.net'
+
 export const MangaFoxInfo: SourceInfo = {
-    version: '2.0.2',
-    name: 'MangaFox',
+    version: '1.0.0',
+    name: 'MangaChan',
     icon: 'icon.png',
-    author: 'Netsky',
-    authorWebsite: 'https://github.com/TheNetsky',
-    description: 'Extension that pulls manga from MangaHere.',
+    author: 'Mory1879',
+    authorWebsite: 'https://github.com/Mory1879',
+    description: 'Extension that pulls manga from MangaChan',
+    language: LanguageCode.RUSSIAN,
     contentRating: ContentRating.MATURE,
-    websiteBaseURL: FF_DOMAIN,
-    sourceTags: [
-        {
-            text: 'Notifications',
-            type: TagType.GREEN
-        }
-    ]
+    websiteBaseURL: MANGACHAN_DOMAIN,
+    sourceTags: [],
 }
 
 export class MangaFox extends Source {
@@ -59,46 +57,56 @@ export class MangaFox extends Source {
         requestTimeout: 20000,
     })
 
-    override getMangaShareUrl(mangaId: string): string { return `${FF_DOMAIN}/manga/${mangaId}` }
+    override getMangaShareUrl(mangaId: string): string { return `${MANGACHAN_MANGA}${mangaId}.html` }
 
     async getMangaDetails(mangaId: string): Promise<Manga> {
         const request = createRequestObject({
-            url: `${FF_DOMAIN}/manga/`,
-            method: 'GET',
-            param: mangaId,
-            cookies: this.cookies
+            url: `${MANGACHAN_MANGA}${mangaId}.html`,
+            method,
         })
-
+    
         const response = await this.requestManager.schedule(request, 1)
         const $ = this.cheerio.load(response.data)
+    
         return parseMangaDetails($, mangaId)
     }
 
     async getChapters(mangaId: string): Promise<Chapter[]> {
         const request = createRequestObject({
-            url: `${FF_DOMAIN}/manga/`,
-            method: 'GET',
-            param: mangaId,
-            cookies: this.cookies
+            url: `${MANGACHAN_MANGA}`,
+            method,
+            param: `${mangaId}.html`
         })
-
+    
         const response = await this.requestManager.schedule(request, 1)
         const $ = this.cheerio.load(response.data)
         return parseChapters($, mangaId)
     }
 
     async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {
-        const request = createRequestObject({
-            url: `${FF_DOMAIN_MOBILE}/roll_manga/${mangaId}/${chapterId}`,
-            method: 'GET',
-            cookies: this.cookies
+        const requestForType = createRequestObject({
+            url: `${MANGACHAN_MANGA}${mangaId}.html`,
+            method,
+            headers,
         })
-
+    
+        const responseForType = await this.requestManager.schedule(requestForType, 1)
+        const $ForType = this.cheerio.load(responseForType.data)
+    
+        const isManhwa = $ForType('#info_wrap > table > tbody > tr:nth-child(2) > td.item2 > h2 > span > a').text() === 'Манхва'
+    
+        const request = createRequestObject({
+            url: `${MANGACHAN_DOMAIN}/online/${chapterId}.html`,
+            method,
+            headers,
+        })
+    
         const response = await this.requestManager.schedule(request, 1)
-        const $ = this.cheerio.load(response.data)
-        return parseChapterDetails($, mangaId, chapterId)
+    
+        return parseChapterDetails(mangaId, chapterId, response.data, isManhwa)
     }
 
+    // TODO
     override async filterUpdatedManga(mangaUpdatesFoundCallback: (updates: MangaUpdates) => void, time: Date, ids: string[]): Promise<void> {
         let page = 1
         let updatedManga: UpdatedManga = {
@@ -126,6 +134,7 @@ export class MangaFox extends Source {
 
     }
 
+    // TODO
     override async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
 
         const request = createRequestObject({
@@ -139,6 +148,7 @@ export class MangaFox extends Source {
         parseHomeSections($, sectionCallback)
     }
 
+    // TODO
     override async getViewMoreItems(homepageSectionId: string, metadata: any): Promise<PagedResults> {
         const page: number = metadata?.page ?? 1
         let param = ''
@@ -174,33 +184,26 @@ export class MangaFox extends Source {
     }
 
     async getSearchResults(query: SearchRequest, metadata: any): Promise<PagedResults> {
-        const page: number = metadata?.page ?? 1
-
-        const url = new URLBuilder(FF_DOMAIN)
-            .addPathComponent('search')
-            .addQueryParameter('page', page)
-            .addQueryParameter('title', encodeURI(query?.title || ''))
-            .addQueryParameter('genres', query.includedTags?.map((x: any) => x.id).join('%2C'))
-            .buildUrl()
-
+        const page : number = metadata?.page ?? 1
+        const search = encodeURI(generateSearch(query))
         const request = createRequestObject({
-            url: url,
-            method: 'GET',
+            url: `${MANGACHAN_DOMAIN}/index.php?do=search&subaction=search&search_start=1&full_search=0&result_from=1&result_num=40&story=${search}&need_sort_date=false`,
+            method,
             headers,
-            cookies: this.cookies,
         })
 
         const response = await this.requestManager.schedule(request, 1)
         const $ = this.cheerio.load(response.data)
         const manga = parseSearch($)
-        metadata = !isLastPage($) ? { page: page + 1 } : undefined
-
+        metadata = !isLastPage($) ? {page: page + 1} : undefined
+        
         return createPagedResults({
             results: manga,
             metadata
         })
     }
 
+    // TODO
     override async getTags(): Promise<TagSection[]> {
         const request = createRequestObject({
             url: `${FF_DOMAIN}/search?`,

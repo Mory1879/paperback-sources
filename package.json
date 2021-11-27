@@ -1,8 +1,8 @@
 {
-  "name": "netskys-extensions",
-  "version": "2.0.0",
-  "repositoryName": "Netsky's Extensions (0.6)",
-  "description": "Netsky's extensions for 0.6!",
+  "name": "mory1879-extensions",
+  "version": "1.0.0",
+  "repositoryName": "mory1879's Extensions (0.6)",
+  "description": "mory1879's extensions for 0.6!",
   "main": "index.js",
   "scripts": {
     "bundle": "paperback bundle",
@@ -13,7 +13,7 @@
     "type": "git",
     "url": "git+https://github.com/Paperback-iOS/extensions-official.git"
   },
-  "author": "Netsky",
+  "author": "mory1879",
   "license": "GPL-3.0-or-later",
   "bugs": {
     "url": "https://github.com/Paperback-iOS/extensions-official/issues"
