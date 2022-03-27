@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 /* eslint-disable linebreak-style */
 import {
     Source,
@@ -11,7 +13,8 @@ import {
     MangaUpdates,
     TagSection,
     ContentRating,
-    LanguageCode
+    LanguageCode,
+    TagType
 } from 'paperback-extensions-common'
 import {
     parseUpdatedManga,
@@ -46,7 +49,12 @@ export const MangaChanInfo: SourceInfo = {
     language: LanguageCode.RUSSIAN,
     contentRating: ContentRating.MATURE,
     websiteBaseURL: MANGACHAN_DOMAIN,
-    sourceTags: [],
+    sourceTags: [
+        {
+            text: 'Buggy',
+            type: TagType.RED
+        }
+    ],
 }
 
 export class MangaChan extends Source {
@@ -106,7 +114,6 @@ export class MangaChan extends Source {
         return parseChapterDetails(mangaId, chapterId, response.data, isManhwa)
     }
 
-    // TODO
     override async filterUpdatedManga(mangaUpdatesFoundCallback: (updates: MangaUpdates) => void, time: Date, ids: string[]): Promise<void> {
         let page = 1
         let updatedManga: UpdatedManga = {
@@ -205,6 +212,7 @@ export class MangaChan extends Source {
     async getSearchResults(query: SearchRequest, metadata: any): Promise<PagedResults> {
         const page : number = metadata?.page ?? 1
         const search = encodeURI(generateSearch(query))
+        // TODO: tags
         // let request
         // if (query.includedTags) {
         //     request = createRequestObject({

@@ -71,7 +71,7 @@ export const parseChapters = ($: CheerioStatic, mangaId: string): Chapter[] => {
             const chapterId = chapterMatch ? chapterMatch[1] : ''
             const chapterText = $(chapter).children().children().toArray().map(a => $(a).text())
             const chapterName = chapterText[0] && chapterText[0].trim()
-            const chapterDate = chapterText[0]
+            const chapterDate = chapterText[1]
 
             return {chapterName, chapterDate, chapterId}
         }).reverse()
