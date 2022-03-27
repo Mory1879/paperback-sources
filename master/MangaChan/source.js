@@ -412,8 +412,8 @@ exports.MangaChanInfo = {
     websiteBaseURL: MANGACHAN_DOMAIN,
     sourceTags: [
         {
-            text: 'Buggy',
-            type: paperback_extensions_common_1.TagType.RED
+            text: "Not all reader's features supported",
+            type: paperback_extensions_common_1.TagType.YELLOW
         }
     ],
 };
