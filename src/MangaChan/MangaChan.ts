@@ -51,8 +51,8 @@ export const MangaChanInfo: SourceInfo = {
     websiteBaseURL: MANGACHAN_DOMAIN,
     sourceTags: [
         {
-            text: 'Buggy',
-            type: TagType.RED
+            text: "Not all reader's features supported",
+            type: TagType.YELLOW
         }
     ],
 }
