@@ -1,8 +1,8 @@
 {
   "name": "mory1879-extensions",
-  "version": "1.0.0",
-  "repositoryName": "mory1879's Extensions (0.6)",
-  "description": "mory1879's extensions for 0.6!",
+  "version": "1.0.1",
+  "repositoryName": "mory1879's Extensions",
+  "description": "mory1879's extensions for Russian-translated sites",
   "main": "index.js",
   "scripts": {
     "bundle": "paperback bundle",
