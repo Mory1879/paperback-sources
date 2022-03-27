@@ -388,6 +388,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MangaChan = exports.MangaChanInfo = void 0;
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 /* eslint-disable linebreak-style */
 const paperback_extensions_common_1 = require("paperback-extensions-common");
 const MangaChanParser_1 = require("./MangaChanParser");
@@ -408,7 +410,12 @@ exports.MangaChanInfo = {
     language: paperback_extensions_common_1.LanguageCode.RUSSIAN,
     contentRating: paperback_extensions_common_1.ContentRating.MATURE,
     websiteBaseURL: MANGACHAN_DOMAIN,
-    sourceTags: [],
+    sourceTags: [
+        {
+            text: 'Buggy',
+            type: paperback_extensions_common_1.TagType.RED
+        }
+    ],
 };
 class MangaChan extends paperback_extensions_common_1.Source {
     constructor() {
@@ -462,7 +469,6 @@ class MangaChan extends paperback_extensions_common_1.Source {
             return MangaChanParser_1.parseChapterDetails(mangaId, chapterId, response.data, isManhwa);
         });
     }
-    // TODO
     filterUpdatedManga(mangaUpdatesFoundCallback, time, ids) {
         return __awaiter(this, void 0, void 0, function* () {
             let page = 1;
@@ -557,6 +563,7 @@ class MangaChan extends paperback_extensions_common_1.Source {
         return __awaiter(this, void 0, void 0, function* () {
             const page = (_a = metadata === null || metadata === void 0 ? void 0 : metadata.page) !== null && _a !== void 0 ? _a : 1;
             const search = encodeURI(MangaChanParser_1.generateSearch(query));
+            // TODO: tags
             // let request
             // if (query.includedTags) {
             //     request = createRequestObject({
@@ -659,7 +666,7 @@ const parseChapters = ($, mangaId) => {
         const chapterId = chapterMatch ? chapterMatch[1] : '';
         const chapterText = $(chapter).children().children().toArray().map(a => $(a).text());
         const chapterName = chapterText[0] && chapterText[0].trim();
-        const chapterDate = chapterText[0];
+        const chapterDate = chapterText[1];
         return { chapterName, chapterDate, chapterId };
     }).reverse();
     for (const chapter of chaptersData) {
