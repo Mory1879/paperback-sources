@@ -10,7 +10,6 @@ import {
     Manga,
     MangaStatus,
     MangaTile,
-    //SearchRequest,
     TagSection,
     SearchRequest
 } from 'paperback-extensions-common'

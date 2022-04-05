@@ -10,14 +10,12 @@ import {
     SearchRequest,
     PagedResults,
     SourceInfo,
-    MangaUpdates,
     TagSection,
     ContentRating,
     LanguageCode,
     TagType
 } from 'paperback-extensions-common'
 import {
-    parseUpdatedManga,
     isLastPage,
     parseTags,
     parseChapterDetails,
@@ -26,7 +24,6 @@ import {
     parseMangaDetails,
     parseSearch,
     parseViewMore,
-    UpdatedManga,
     generateSearch
 } from './MangaChanParser'
 
@@ -36,8 +33,6 @@ const method = 'GET'
 const headers = {
     referer: MANGACHAN_DOMAIN
 }
-
-const FF_DOMAIN = 'https://fanfox.net'
 
 export const MangaChanInfo: SourceInfo = {
     version: '1.0.0',
@@ -51,6 +46,7 @@ export const MangaChanInfo: SourceInfo = {
     websiteBaseURL: MANGACHAN_DOMAIN,
     sourceTags: [
         {
+            // eslint-disable-next-line quotes
             text: "Not all reader's features supported",
             type: TagType.YELLOW
         }
@@ -58,8 +54,6 @@ export const MangaChanInfo: SourceInfo = {
 }
 
 export class MangaChan extends Source {
-    readonly cookies = [createCookie({ name: 'isAdult', value: '1', domain: 'www.mangahere.cc' })];
-
     requestManager = createRequestManager({
         requestsPerSecond: 5,
         requestTimeout: 20000,
@@ -114,39 +108,37 @@ export class MangaChan extends Source {
         return parseChapterDetails(mangaId, chapterId, response.data, isManhwa)
     }
 
-    override async filterUpdatedManga(mangaUpdatesFoundCallback: (updates: MangaUpdates) => void, time: Date, ids: string[]): Promise<void> {
-        let page = 1
-        let updatedManga: UpdatedManga = {
-            ids: [],
-            loadMore: true
-        }
+    // TODO: check if this is possible to do
+    // override async filterUpdatedManga(mangaUpdatesFoundCallback: (updates: MangaUpdates) => void, time: Date, ids: string[]): Promise<void> {
+    //     let page = 1
+    //     let updatedManga: UpdatedManga = {
+    //         ids: [],
+    //         loadMore: true
+    //     }
 
-        while (updatedManga.loadMore) {
-            const request = createRequestObject({
-                url: `${FF_DOMAIN}/releases/${page++}`,
-                method: 'GET',
-                cookies: this.cookies
-            })
+    //     while (updatedManga.loadMore) {
+    //         const request = createRequestObject({
+    //             url: `${FF_DOMAIN}/releases/${page++}`,
+    //             method: 'GET',
+    //         })
 
-            const response = await this.requestManager.schedule(request, 1)
-            const $ = this.cheerio.load(response.data)
+    //         const response = await this.requestManager.schedule(request, 1)
+    //         const $ = this.cheerio.load(response.data)
 
-            updatedManga = parseUpdatedManga($, time, ids)
-            if (updatedManga.ids.length > 0) {
-                mangaUpdatesFoundCallback(createMangaUpdates({
-                    ids: updatedManga.ids
-                }))
-            }
-        }
-
-    }
+    //         updatedManga = parseUpdatedManga($, time, ids)
+    //         if (updatedManga.ids.length > 0) {
+    //             mangaUpdatesFoundCallback(createMangaUpdates({
+    //                 ids: updatedManga.ids
+    //             }))
+    //         }
+    //     }
+    // }
 
     override async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
 
         const requestNew = createRequestObject({
             url: `${MANGACHAN_DOMAIN}/manga/new`,
             method: 'GET',
-            cookies: this.cookies
         })
         const responseNew = await this.requestManager.schedule(requestNew, 1)
         const $new = this.cheerio.load(responseNew.data)
@@ -154,7 +146,6 @@ export class MangaChan extends Source {
         const requestPopular = createRequestObject({
             url: `${MANGACHAN_DOMAIN}/mostfavorites`,
             method: 'GET',
-            cookies: this.cookies
         })
         const responsePopular = await this.requestManager.schedule(requestPopular, 1)
         const $popular = this.cheerio.load(responsePopular.data)
@@ -195,7 +186,6 @@ export class MangaChan extends Source {
             url: `${MANGACHAN_DOMAIN}`,
             method: 'GET',
             param,
-            cookies: this.cookies
         })
 
         const response = await this.requestManager.schedule(request, 1)
@@ -243,7 +233,6 @@ export class MangaChan extends Source {
         const request = createRequestObject({
             url: `${MANGACHAN_DOMAIN}/catalog?`,
             method: 'GET',
-            cookies: this.cookies,
         })
 
         const response = await this.requestManager.schedule(request, 1)
