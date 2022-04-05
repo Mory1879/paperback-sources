@@ -399,7 +399,6 @@ const method = 'GET';
 const headers = {
     referer: MANGACHAN_DOMAIN
 };
-const FF_DOMAIN = 'https://fanfox.net';
 exports.MangaChanInfo = {
     version: '1.0.0',
     name: 'MangaChan',
@@ -412,6 +411,7 @@ exports.MangaChanInfo = {
     websiteBaseURL: MANGACHAN_DOMAIN,
     sourceTags: [
         {
+            // eslint-disable-next-line quotes
             text: "Not all reader's features supported",
             type: paperback_extensions_common_1.TagType.YELLOW
         }
@@ -420,7 +420,6 @@ exports.MangaChanInfo = {
 class MangaChan extends paperback_extensions_common_1.Source {
     constructor() {
         super(...arguments);
-        this.cookies = [createCookie({ name: 'isAdult', value: '1', domain: 'www.mangahere.cc' })];
         this.requestManager = createRequestManager({
             requestsPerSecond: 5,
             requestTimeout: 20000,
@@ -469,43 +468,39 @@ class MangaChan extends paperback_extensions_common_1.Source {
             return MangaChanParser_1.parseChapterDetails(mangaId, chapterId, response.data, isManhwa);
         });
     }
-    filterUpdatedManga(mangaUpdatesFoundCallback, time, ids) {
-        return __awaiter(this, void 0, void 0, function* () {
-            let page = 1;
-            let updatedManga = {
-                ids: [],
-                loadMore: true
-            };
-            while (updatedManga.loadMore) {
-                const request = createRequestObject({
-                    url: `${FF_DOMAIN}/releases/${page++}`,
-                    method: 'GET',
-                    cookies: this.cookies
-                });
-                const response = yield this.requestManager.schedule(request, 1);
-                const $ = this.cheerio.load(response.data);
-                updatedManga = MangaChanParser_1.parseUpdatedManga($, time, ids);
-                if (updatedManga.ids.length > 0) {
-                    mangaUpdatesFoundCallback(createMangaUpdates({
-                        ids: updatedManga.ids
-                    }));
-                }
-            }
-        });
-    }
+    // TODO: check if this is possible to do
+    // override async filterUpdatedManga(mangaUpdatesFoundCallback: (updates: MangaUpdates) => void, time: Date, ids: string[]): Promise<void> {
+    //     let page = 1
+    //     let updatedManga: UpdatedManga = {
+    //         ids: [],
+    //         loadMore: true
+    //     }
+    //     while (updatedManga.loadMore) {
+    //         const request = createRequestObject({
+    //             url: `${FF_DOMAIN}/releases/${page++}`,
+    //             method: 'GET',
+    //         })
+    //         const response = await this.requestManager.schedule(request, 1)
+    //         const $ = this.cheerio.load(response.data)
+    //         updatedManga = parseUpdatedManga($, time, ids)
+    //         if (updatedManga.ids.length > 0) {
+    //             mangaUpdatesFoundCallback(createMangaUpdates({
+    //                 ids: updatedManga.ids
+    //             }))
+    //         }
+    //     }
+    // }
     getHomePageSections(sectionCallback) {
         return __awaiter(this, void 0, void 0, function* () {
             const requestNew = createRequestObject({
                 url: `${MANGACHAN_DOMAIN}/manga/new`,
                 method: 'GET',
-                cookies: this.cookies
             });
             const responseNew = yield this.requestManager.schedule(requestNew, 1);
             const $new = this.cheerio.load(responseNew.data);
             const requestPopular = createRequestObject({
                 url: `${MANGACHAN_DOMAIN}/mostfavorites`,
                 method: 'GET',
-                cookies: this.cookies
             });
             const responsePopular = yield this.requestManager.schedule(requestPopular, 1);
             const $popular = this.cheerio.load(responsePopular.data);
@@ -546,7 +541,6 @@ class MangaChan extends paperback_extensions_common_1.Source {
                 url: `${MANGACHAN_DOMAIN}`,
                 method: 'GET',
                 param,
-                cookies: this.cookies
             });
             const response = yield this.requestManager.schedule(request, 1);
             const $ = this.cheerio.load(response.data);
@@ -593,7 +587,6 @@ class MangaChan extends paperback_extensions_common_1.Source {
             const request = createRequestObject({
                 url: `${MANGACHAN_DOMAIN}/catalog?`,
                 method: 'GET',
-                cookies: this.cookies,
             });
             const response = yield this.requestManager.schedule(request, 1);
             const $ = this.cheerio.load(response.data);
