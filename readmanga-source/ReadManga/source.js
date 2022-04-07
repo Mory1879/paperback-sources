@@ -412,6 +412,11 @@ exports.ReadMangaInfo = {
     sourceTags: [
         {
             // eslint-disable-next-line quotes
+            text: "Buggy and can crash",
+            type: paperback_extensions_common_1.TagType.RED
+        },
+        {
+            // eslint-disable-next-line quotes
             text: "Not all reader's features supported",
             type: paperback_extensions_common_1.TagType.YELLOW
         }
@@ -449,6 +454,7 @@ class ReadManga extends paperback_extensions_common_1.Source {
         });
     }
     getChapterDetails(mangaId, chapterId) {
+        var _a, _b, _c, _d, _e;
         return __awaiter(this, void 0, void 0, function* () {
             const requestForType = createRequestObject({
                 url: `${READMANGA_DOMAIN}${mangaId}`,
@@ -458,22 +464,20 @@ class ReadManga extends paperback_extensions_common_1.Source {
             const $ForType = this.cheerio.load(responseForType.data);
             const isManhwa = $ForType('#mangaBox > div.leftContent > div:nth-child(5) > div.flex-row > div.col-sm-7 > div.subject-meta > p:nth-child(6) > span.elem_category > a').text() === 'Манхва';
             const request = createRequestObject({
-                url: `${READMANGA_DOMAIN}${mangaId}/${chapterId}`,
+                url: `${READMANGA_DOMAIN}${mangaId}${chapterId}`,
                 method,
                 headers,
             });
             const response = yield this.requestManager.schedule(request, 1);
-            // селектор для скрипт-тега, который хранит в себе ссылку на ТЕКУЩУЮ страницу
-            // #wrap > div.reader-controller.pageBlock.container.reader-bottom.bordered-page-block > script
-            // сам тег
-            // <script type="text/javascript">
-            // var prevLink = true;
-            // var nextLink = true;
-            // var nextChapterLink = "/plamennaia_brigada_pojarnyh_/vol34/295";
-            // rm_h.initReader( [2,3], [['https://h111.rmr.rocks/','',"auto/54/11/79/181.jpg",1115,1600],['https://h111.rmr.rocks/','',"auto/54/11/79/182.jpg",1115,1600],['https://h111.rmr.rocks/','',"auto/54/11/79/183.jpg",1115,1600],['https://h111.rmr.rocks/','',"auto/54/11/79/184.jpg",1115,1600],['https://h111.rmr.rocks/','',"auto/54/11/79/185.jpg",1115,1600],['https://h111.rmr.rocks/','',"auto/54/11/79/186.jpg",1115,1600],['https://h111.rmr.rocks/','',"auto/54/11/79/187.jpg",1115,1600],['https://h111.rmr.rocks/','',"auto/54/11/79/188.jpg",1115,1600],['https://h111.rmr.rocks/','',"auto/54/11/79/189.jpg",1115,1600],['https://h111.rmr.rocks/','',"auto/54/11/79/190.jpg",1115,1600],['https://h111.rmr.rocks/','',"auto/54/11/79/191.jpg",1115,1600],['https://h111.rmr.rocks/','',"auto/54/11/79/192.jpg",1115,1600],['https://h111.rmr.rocks/','',"auto/54/11/79/193.jpg_res.jpg",1115,1600],['https://h111.rmr.rocks/','',"auto/54/11/79/194.jpg",1115,1600],['https://h111.rmr.rocks/','',"auto/54/11/79/195.jpg",1115,1600],['https://h111.rmr.rocks/','',"auto/54/11/79/196.jpg",1115,1600],['https://h111.rmr.rocks/','',"auto/54/11/79/197.jpg",1115,1600],['https://h111.rmr.rocks/','',"auto/54/11/79/198.jpg",1115,1600],['https://h111.rmr.rocks/','',"auto/54/11/79/199.jpg",1115,1600],['https://h111.rmr.rocks/','',"auto/54/11/79/200.jpg",1115,1600],['https://h111.rmr.rocks/','',"auto/54/11/79/300.jpg_res.jpg",1612,1600]], 0, false, [{"path":"https://h111.rmr.rocks/","res":true}], false);
-            // </script>
-            // поправить chapterId
-            return ReadMangaParser_1.parseChapterDetails(mangaId, chapterId, response.data, isManhwa);
+            const $ = this.cheerio.load(response.data, { xmlMode: true });
+            const regex = /rm_h\.initReader(.*)/gmi;
+            const script = (_a = $('#wrap > div.reader-controller.pageBlock.container.reader-bottom.bordered-page-block > script').html()) === null || _a === void 0 ? void 0 : _a.match(regex);
+            const domainRegex = /&apos;(https:\/\/\S+?\/)/gmi;
+            const domainMatches = script && ((_b = script[0]) === null || _b === void 0 ? void 0 : _b.match(domainRegex));
+            const domain = domainMatches && ((_c = domainMatches[0]) === null || _c === void 0 ? void 0 : _c.substring(6));
+            const urlRegex = /&quot;(.*?\.[jpng]+).*?,/gim;
+            const urlMatches = script && ((_e = (_d = script[0]) === null || _d === void 0 ? void 0 : _d.match(urlRegex)) === null || _e === void 0 ? void 0 : _e.map(url => domain + url.substring(6, url.length - 7)));
+            return ReadMangaParser_1.parseChapterDetails(mangaId, chapterId, urlMatches, isManhwa);
         });
     }
     // TODO: check if this is possible to do
@@ -707,10 +711,14 @@ const parseChapters = ($, mangaId) => {
     return chapters;
 };
 exports.parseChapters = parseChapters;
-const parseChapterDetails = (mangaId, chapterId, data, longStrip) => {
-    var _a;
-    const linksStringMatch = /"fullimg":(\[.*\])/gim.exec(data);
-    const linksStrings = linksStringMatch && ((_a = linksStringMatch[1]) !== null && _a !== void 0 ? _a : '').split(',');
+const parseChapterDetails = (mangaId, chapterId, urls, longStrip) => {
+    false && console.log({
+        mangaId,
+        chapterId,
+        longStrip
+    });
+    // const linksStringMatch = /"fullimg":(\[.*\])/gim.exec(data)
+    // const linksStrings = linksStringMatch && (linksStringMatch[1] ?? '').split(',')
     // https://h111.rmr.rocks/auto/22/42/45/02.jpg_res.jpg
     // https://h11.rmr.rocks/auto/55/62/70/001.png
     // #wrap > div.reader-controller.pageBlock.container.reader-bottom.bordered-page-block > script
@@ -719,8 +727,8 @@ const parseChapterDetails = (mangaId, chapterId, data, longStrip) => {
     //     return linkMatch && linkMatch[1]
     // }).filter(link => !!link && link !== null)
     const pages = [];
-    if (links) {
-        links.forEach(link => {
+    if (urls && urls.length) {
+        urls.forEach(link => {
             if (link !== null)
                 pages.push(link !== null && link !== void 0 ? link : '');
         });
