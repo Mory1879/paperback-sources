@@ -50,7 +50,7 @@ describe('ReadManga Tests', () => {
         expect(entry?.chapNum, 'No chapter number present').to.not.be.null
     })
 
-    it.only('Get Chapter Details', async () => {
+    it('Get Chapter Details', async () => {
         const chapters = await wrapper.getChapters(source, mangaId)
 
         const data = await wrapper.getChapterDetails(source, mangaId, chapters[0]?.id ?? 'unknown')

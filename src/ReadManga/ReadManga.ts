@@ -47,6 +47,11 @@ export const ReadMangaInfo: SourceInfo = {
     sourceTags: [
         {
             // eslint-disable-next-line quotes
+            text: "Buggy and can crash",
+            type: TagType.RED
+        },
+        {
+            // eslint-disable-next-line quotes
             text: "Not all reader's features supported",
             type: TagType.YELLOW
         }
@@ -94,31 +99,31 @@ export class ReadManga extends Source {
         const $ForType = this.cheerio.load(responseForType.data)
     
         const isManhwa = $ForType('#mangaBox > div.leftContent > div:nth-child(5) > div.flex-row > div.col-sm-7 > div.subject-meta > p:nth-child(6) > span.elem_category > a').text() === 'Манхва'
-    
+
         const request = createRequestObject({
-            url: `${READMANGA_DOMAIN}${mangaId}/${chapterId}`,
+            url: `${READMANGA_DOMAIN}${mangaId}${chapterId}`,
             method,
             headers,
         })
     
         const response = await this.requestManager.schedule(request, 1)
 
-
-        // селектор для скрипт-тега, который хранит в себе ссылку на ТЕКУЩУЮ страницу
-        // #wrap > div.reader-controller.pageBlock.container.reader-bottom.bordered-page-block > script
-    
-        // сам тег
-        // <script type="text/javascript">
-        // var prevLink = true;
-        // var nextLink = true;
-        // var nextChapterLink = "/plamennaia_brigada_pojarnyh_/vol34/295";
+        const $ = this.cheerio.load(response.data, {xmlMode: true})
         
-        // rm_h.initReader( [2,3], [['https://h111.rmr.rocks/','',"auto/54/11/79/181.jpg",1115,1600],['https://h111.rmr.rocks/','',"auto/54/11/79/182.jpg",1115,1600],['https://h111.rmr.rocks/','',"auto/54/11/79/183.jpg",1115,1600],['https://h111.rmr.rocks/','',"auto/54/11/79/184.jpg",1115,1600],['https://h111.rmr.rocks/','',"auto/54/11/79/185.jpg",1115,1600],['https://h111.rmr.rocks/','',"auto/54/11/79/186.jpg",1115,1600],['https://h111.rmr.rocks/','',"auto/54/11/79/187.jpg",1115,1600],['https://h111.rmr.rocks/','',"auto/54/11/79/188.jpg",1115,1600],['https://h111.rmr.rocks/','',"auto/54/11/79/189.jpg",1115,1600],['https://h111.rmr.rocks/','',"auto/54/11/79/190.jpg",1115,1600],['https://h111.rmr.rocks/','',"auto/54/11/79/191.jpg",1115,1600],['https://h111.rmr.rocks/','',"auto/54/11/79/192.jpg",1115,1600],['https://h111.rmr.rocks/','',"auto/54/11/79/193.jpg_res.jpg",1115,1600],['https://h111.rmr.rocks/','',"auto/54/11/79/194.jpg",1115,1600],['https://h111.rmr.rocks/','',"auto/54/11/79/195.jpg",1115,1600],['https://h111.rmr.rocks/','',"auto/54/11/79/196.jpg",1115,1600],['https://h111.rmr.rocks/','',"auto/54/11/79/197.jpg",1115,1600],['https://h111.rmr.rocks/','',"auto/54/11/79/198.jpg",1115,1600],['https://h111.rmr.rocks/','',"auto/54/11/79/199.jpg",1115,1600],['https://h111.rmr.rocks/','',"auto/54/11/79/200.jpg",1115,1600],['https://h111.rmr.rocks/','',"auto/54/11/79/300.jpg_res.jpg",1612,1600]], 0, false, [{"path":"https://h111.rmr.rocks/","res":true}], false);
-        // </script>
+        const regex = /rm_h\.initReader(.*)/gmi
+        
+        const script = $('#wrap > div.reader-controller.pageBlock.container.reader-bottom.bordered-page-block > script').html()?.match(regex)
+        
+        const domainRegex = /&apos;(https:\/\/\S+?\/)/gmi
 
+        const domainMatches = script && script[0]?.match(domainRegex)
+        const domain = domainMatches && domainMatches[0]?.substring(6)
 
-        // поправить chapterId
-        return parseChapterDetails(mangaId, chapterId, response.data, isManhwa)
+        const urlRegex = /&quot;(.*?\.[jpng]+).*?,/gim
+        
+        const urlMatches = script && script[0]?.match(urlRegex)?.map(url => domain + url.substring(6, url.length - 7))
+
+        return parseChapterDetails(mangaId, chapterId, urlMatches, isManhwa)
     }
 
     // TODO: check if this is possible to do

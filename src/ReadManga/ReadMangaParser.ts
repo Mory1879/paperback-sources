@@ -109,9 +109,14 @@ export const parseChapters = ($: CheerioStatic, mangaId: string): Chapter[] => {
     return chapters
 }
 
-export const parseChapterDetails = (mangaId: string, chapterId: string, data: any, longStrip: boolean): ChapterDetails => {
-    const linksStringMatch = /"fullimg":(\[.*\])/gim.exec(data)
-    const linksStrings = linksStringMatch && (linksStringMatch[1] ?? '').split(',')
+export const parseChapterDetails = (mangaId: string, chapterId: string, urls: string[] | null | undefined, longStrip: boolean): ChapterDetails => {
+    false && console.log({
+        mangaId,
+        chapterId,
+        longStrip
+    })
+    // const linksStringMatch = /"fullimg":(\[.*\])/gim.exec(data)
+    // const linksStrings = linksStringMatch && (linksStringMatch[1] ?? '').split(',')
 
 
     // https://h111.rmr.rocks/auto/22/42/45/02.jpg_res.jpg
@@ -125,8 +130,8 @@ export const parseChapterDetails = (mangaId: string, chapterId: string, data: an
     // }).filter(link => !!link && link !== null)
 
     const pages : string[] = []
-    if (links) {
-        links.forEach(link => {
+    if (urls && urls.length) {
+        urls.forEach(link => {
             if (link !== null) pages.push(link ?? '')
         })
     }
